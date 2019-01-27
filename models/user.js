@@ -6,9 +6,12 @@ const mongoose = restful.mongoose;
 const userSchema = new mongoose.Schema({
     username: { type: String, unique: true, required: true, min: 8 },
     password: { type: String, required: true, min: 8 },
-    lastname: { type: String, required: true },
-    firstname: { type: String, required: true },
-    usertype: { type: String, default: "user" }
+    // lastname: { type: String, required: true },
+    // firstname: { type: String, required: true },
+    usertype: { type: String, default: "user" },
+    email: { type: String, required: true },
+    displayName: { type: String, required: true },
+    avatar: { type: Object }
 });
 
 // return models

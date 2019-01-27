@@ -2,14 +2,35 @@
 const UserModel = require('../models/user');
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const _ = require('lodash');
+
+const storage = multer.diskStorage({
+    destination: './public/',
+    filename: (req, file, cb) => {
+        cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`)
+    }
+})
+
+const host = "http://jarvisdomain.ddns.net";
+
+const upload = multer({
+    storage: storage
+}).single('avatar');
 
 // create
-router.post('/api/user', (req, res) => {
-    if (!req.body) {
+router.post('/api/user', upload, (req, res) => {
+    const bodyObj = _.clone(req.body);
+    if (!bodyObj) {
         return res.status(400).send('Request body is missing');
     }
 
-    const user = new UserModel(req.body)
+    if (req.file) {
+        _.set(bodyObj, 'avatar', `${host}/${req.file.filename}`);
+    }
+
+    const user = new UserModel(bodyObj)
     user.save()
         .then(doc => {
             if (!doc || doc.length === 0) {
