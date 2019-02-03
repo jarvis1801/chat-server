@@ -2,8 +2,6 @@ console.log('May Node be with you');
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const multer = require('multer');
-
 // conect to mongo
 mongoose.connect('mongodb://test:test123@ds161804.mlab.com:61804/jarvis-chat', { useNewUrlParser: true });
 
