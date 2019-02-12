@@ -1,8 +1,11 @@
 const GroupModel = require('../models/group');
 const MessageModel = require('../models/message');
+const UserModel = require('../models/user');
 const _ = require('lodash');
+const async = require("async");
 const express = require('express');
 const router = express.Router();
+const moment = require('moment');
 
 router.get('/api/group/:username', (req, res) => {
     GroupModel.find({
@@ -27,9 +30,32 @@ router.get('/api/group/:username', (req, res) => {
             MessageModel.find({
                 group_id: { $in: idList }
             }, null, { sort: { posted_at: "-1" } })
+                .populate('group')
                 .then(doc => {
                     const uniqArray = _.uniqBy(doc, "group_id");
-                    res.status(200).json(uniqArray)
+
+                    results = [];
+                    async.each(uniqArray, (message, callback) => { 
+                        const user1 = message['group']['user1'];
+                        const user2 = message['group']['user2'];
+                        let other_user;
+                        if (user1 != req.params.username) {
+                            other_user = user1;
+                        } else {
+                            other_user = user2;
+                        }
+                        UserModel.findOne({ username: other_user }, (err, user) => {
+                            const obj = message.toObject();
+                            obj['other_user'] = user;
+                            results.push(obj);
+                            callback(err);
+                        });            
+                    },
+                    (err) => {
+                        if (err) res.status(500).json(err);
+                        results = _.reverse(_.sortBy(results, [(msg) => { return moment(msg.posted_at).valueOf(); }]));
+                        res.status(200).json(results)
+                    });
                 })
         })
         .catch(err => {

@@ -8,7 +8,8 @@ const messageSchema = new mongoose.Schema({
     // reciever: { type: String, required: true },
     message: { type: String, required: true },
     posted_at: { type: String, required: true },
-    group_id: { type: String, require: true }
+    group_id: { type: String, require: true },
+    group: { type: mongoose.Schema.Types.ObjectId, require: true, ref: 'Group' }
 });
 
 // return models
