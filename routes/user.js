@@ -1,10 +1,12 @@
 // denpend
 const UserModel = require('../models/user');
+const GroupModel = require('../models/group');
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const _ = require('lodash');
+const constants = require("../constants.js")
 
 const storage = multer.diskStorage({
     destination: './public/',
@@ -13,7 +15,7 @@ const storage = multer.diskStorage({
     }
 })
 
-const host = "http://jarvisdomain.ddns.net";
+const host = constants.host;
 
 const upload = multer({
     storage: storage
@@ -27,7 +29,7 @@ router.post('/api/user', upload, (req, res) => {
     }
 
     if (req.file) {
-        _.set(bodyObj, 'avatar', `${host}/${req.file.filename}`);
+        _.set(bodyObj, 'avatar', `${req.file.filename}`);
     }
 
     const user = new UserModel(bodyObj)
@@ -47,6 +49,7 @@ router.post('/api/user', upload, (req, res) => {
 
 // update
 router.put('/api/user/:username', (req, res) => {
+
     if (!req.body) {
         return res.status(400).send('Request body is missing');
     }
@@ -74,6 +77,10 @@ router.put('/api/user/:username', (req, res) => {
 router.get('/api/user', (req, res) => {
     UserModel.find()
         .then(doc => {
+            doc = _.map(doc, (val, key) => {
+                _.set(val, 'avatar', host + val.avatar);
+                return val;
+            });
             res.status(200).json(doc);
         })
         .catch(err => {
@@ -88,6 +95,7 @@ router.get('/api/user/:username', (req, res) => {
     })
         .then(doc => {
             if (doc) {
+                _.set(doc, 'avatar', host + doc.avatar);
                 return res.status(200).json(doc);
             }
             res.status(500).json({
@@ -97,6 +105,47 @@ router.get('/api/user/:username', (req, res) => {
         })
         .catch(err => {
             res.status(500).json(err);
+        })
+})
+
+router.get('/api/user/getRandom/:username', (req, res) => {
+    GroupModel.find({
+        $or: [
+            {
+                user1: req.params.username
+            },
+            {
+                user2: req.params.username
+            }
+        ]
+    })
+        .then(doc => {
+            const userList = _.reduce(doc, (result, val) => {
+                const userId = _.get(val, "user1", null) != req.params.username ? 
+                    _.get(val, "user1", null) : _.get(val, "user2", null);
+                if (_.size(userId) > 0) {
+                    result.push(userId)
+                }
+                return result;
+            }, []);
+            userList.push(req.params.username)
+            UserModel.find({
+                username: { $nin: userList }
+            })
+                .then(doc => {
+                    let randomList = _.sampleSize(doc, 5)
+                    randomList = _.map(randomList, (val, key) => {
+                        _.set(val, 'avatar', host + val.avatar);
+                        return val;
+                    });
+                    res.status(200).json(randomList)
+                })
+                .catch(err => {
+                    res.status(500).json(err)
+                })
+        })
+        .catch(err => {
+            res.status(500).json(err)
         })
 })
 

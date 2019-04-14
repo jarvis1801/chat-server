@@ -22,6 +22,7 @@ router.post('/api/message', (req, res) => {
             res.status(201).send(doc);
         })
         .catch(err => {
+            console.log(err)
             res.status(500).json(err);
         })
 
@@ -72,6 +73,25 @@ router.get('/api/message/:username', (req, res) => {
     .then(doc => {
         if (doc) {
             return res.status(201).json(doc);
+        }
+        res.status(500).json({
+            error: "cannot get message",
+            statusCode: "500"
+        });
+    })
+    .catch(err => {
+        res.status(500).json(err);
+    })
+})
+
+// get user by groupid
+router.get('/api/message/group/:groupid', (req, res) => {
+    MessageModel.find({
+        group_id: req.params.groupid
+    })
+    .then(doc => {
+        if (doc) {
+            return res.status(200).json(doc);
         }
         res.status(500).json({
             error: "cannot get message",

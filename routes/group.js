@@ -6,6 +6,9 @@ const async = require("async");
 const express = require('express');
 const router = express.Router();
 const moment = require('moment');
+const constants = require("../constants.js")
+
+const host = constants.host;
 
 router.get('/api/group/:username', (req, res) => {
     GroupModel.find({
@@ -26,7 +29,7 @@ router.get('/api/group/:username', (req, res) => {
                 }
                 return result;
             }, []);
-            console.log(idList)
+
             MessageModel.find({
                 group_id: { $in: idList }
             }, null, { sort: { posted_at: "-1" } })
@@ -38,15 +41,18 @@ router.get('/api/group/:username', (req, res) => {
                     async.each(uniqArray, (message, callback) => { 
                         const user1 = message['group']['user1'];
                         const user2 = message['group']['user2'];
+
                         let other_user;
                         if (user1 != req.params.username) {
                             other_user = user1;
                         } else {
                             other_user = user2;
                         }
+
                         UserModel.findOne({ username: other_user }, (err, user) => {
                             const obj = message.toObject();
                             obj['other_user'] = user;
+                            _.set(obj.other_user, 'avatar', host + obj.other_user.avatar);
                             results.push(obj);
                             callback(err);
                         });            
@@ -64,7 +70,7 @@ router.get('/api/group/:username', (req, res) => {
 })
 
 router.post('/api/group', (req, res) => {
-    console.log(req.body)
+
     const group = new GroupModel(req.body)
     group.save()
         .then(doc => {
